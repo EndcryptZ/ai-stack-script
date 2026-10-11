@@ -114,6 +114,14 @@ dl "https://huggingface.co/Comfy-Org/flux2-dev/resolve/main/split_files/vae/flux
 dl "https://huggingface.co/Kiro930/flux-2-klein-9b/resolve/main/flux-2-klein-9b.safetensors"         "$COMFY/models/diffusion_models" & pids+=($!)
 dl "https://huggingface.co/SassyDiffusion/FLUX.2-klein-9B-bf16/resolve/main/qwen_3_8b.safetensors"   "$COMFY/models/text_encoders"    & pids+=($!)
 
+# MiniMax-H3
+dl "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors" "$COMFY/models/diffusion_models" & pids+=($!)
+dl "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors"          "$COMFY/models/text_encoders"    & pids+=($!)
+dl "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_fp16.safetensors"                          "$COMFY/models/vae"              & pids+=($!)
+dl "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_audio_vae_fp32.safetensors"                          "$COMFY/models/vae"              & pids+=($!)
+dl "https://huggingface.co/akatz-ai/MiniMax-H3-Character-Swap-LoRA/resolve/main/h3_character_swap_pro4500_1000.safetensors"      "$COMFY/models/loras"            & pids+=($!)
+dl "https://huggingface.co/lightx2v/Minimax-h3-Turbo/resolve/main/minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors"    "$COMFY/models/loras"            & pids+=($!)
+
 # Personal LoRAs (uncomment and edit once you pick a host, e.g. a private HF repo)
 # dl "https://huggingface.co/yourname/my-loras/resolve/main/my_lora.safetensors" "$COMFY/models/loras" & pids+=($!)
 
