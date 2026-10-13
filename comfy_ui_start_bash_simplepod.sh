@@ -114,6 +114,14 @@ dl "https://huggingface.co/Comfy-Org/flux2-dev/resolve/main/split_files/vae/flux
 dl "https://huggingface.co/Kiro930/flux-2-klein-9b/resolve/main/flux-2-klein-9b.safetensors"         "$COMFY/models/diffusion_models" & pids+=($!)
 dl "https://huggingface.co/SassyDiffusion/FLUX.2-klein-9B-bf16/resolve/main/qwen_3_8b.safetensors"   "$COMFY/models/text_encoders"    & pids+=($!)
 
+# Wan 2.1 / SCAIL-2
+dl "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/clip_vision/clip_vision_h.safetensors"                        "$COMFY/models/clip_vision"      & pids+=($!)
+dl "https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Lightx2v/lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16.safetensors"                   "$COMFY/models/loras"            & pids+=($!)
+dl "https://huggingface.co/Comfy-Org/sam3.1/resolve/main/checkpoints/sam3.1_multiplex_fp16.safetensors"                                                 "$COMFY/models/checkpoints"      & pids+=($!)
+dl "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors"          "$COMFY/models/text_encoders"    & pids+=($!)
+dl "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/vae/wan_2.1_vae.safetensors"                                   "$COMFY/models/vae"              & pids+=($!)
+dl "https://huggingface.co/Comfy-Org/SCAIL-2/resolve/main/diffusion_models/wan2.1_14B_SCAIL_2_int8_convrot.safetensors"                                 "$COMFY/models/diffusion_models" & pids+=($!)
+
 # Personal LoRAs (uncomment and edit once you pick a host, e.g. a private HF repo)
 # dl "https://huggingface.co/yourname/my-loras/resolve/main/my_lora.safetensors" "$COMFY/models/loras" & pids+=($!)
 
