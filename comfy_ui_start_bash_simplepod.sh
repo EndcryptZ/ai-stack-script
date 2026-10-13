@@ -7,6 +7,7 @@ SECONDS=0
 COMFY="${COMFY:-/app/ComfyUI}"
 PIP="${PIP:-pip}"                       # e.g. PIP="/app/venv/bin/pip" if ComfyUI runs in a venv
 HF_TOKEN="${HF_TOKEN:-}"                # optional: only needed for gated/private repos
+MAX_JOBS="${MAX_JOBS:-6}"               # max simultaneous downloads
 BASE=https://huggingface.co/Comfy-Org/Krea-2/resolve/main
 
 # ---------- Finish messages (10 per category) ----------
@@ -49,6 +50,24 @@ MSGS_SLOW=(
   "The pod has spoken: everything is installed. Go forth and create."
 )
 
+# ---------- Custom nodes ----------
+NODES=(
+  https://github.com/romandev-codex/ComfyUI-Downloader
+  https://github.com/rgthree/rgthree-comfy
+  https://github.com/WASasquatch/was-node-suite-comfyui
+  https://github.com/Suzie1/ComfyUI_Comfyroll_CustomNodes
+  https://github.com/Jonseed/ComfyUI-Detail-Daemon
+  https://github.com/1038lab/ComfyUI-RMBG
+  https://github.com/MadiatorLabs/ComfyUI-RunpodDirect
+  https://github.com/kijai/ComfyUI-KJNodes
+  https://github.com/kosinkadink/ComfyUI-VideoHelperSuite
+  https://github.com/Fannovel16/comfyui_controlnet_aux
+  https://github.com/Fannovel16/ComfyUI-Frame-Interpolation
+  https://github.com/kijai/ComfyUI-segment-anything-2
+  https://github.com/kijai/ComfyUI-WanAnimatePreprocess
+  https://github.com/kijai/ComfyUI-WanVideoWrapper
+)
+
 # ---------- Helpers ----------
 fmt_time() { printf '%dm %02ds' $(( $1 / 60 )) $(( $1 % 60 )); }
 
@@ -72,10 +91,10 @@ if ! command -v aria2c >/dev/null 2>&1; then
 fi
 
 # Download helper: multi-connection aria2c, no pre-allocation, resumable.
+# Usage: dl URL DIR [SAVE_AS_FILENAME]   (filename defaults to the one in the URL)
 # Sends the HF token only if HF_TOKEN is set.
 dl() {
-  local url="$1" dir="$2" file
-  file=$(basename "$url")
+  local url="$1" dir="$2" file="${3:-$(basename "$1")}"
   mkdir -p "$dir"
   if command -v aria2c >/dev/null 2>&1; then
     local args=(-x 8 -s 8 -k 32M --file-allocation=none -c
@@ -89,57 +108,77 @@ dl() {
   fi
 }
 
-# Custom node helper: clone if missing, install requirements if present.
-# A failed pip install prints a warning instead of killing the whole script.
-node() {
-  local url="$1" name
-  name=$(basename "$url" .git)
-  [ -d "$name" ] || git clone -q "$url"
-  if [ -f "$name/requirements.txt" ]; then
-    $PIP install -q -r "$name/requirements.txt" \
+# Queue a download in the background, waiting if MAX_JOBS are already running
+pids=()
+queue() {
+  while [ "$(jobs -rp | wc -l)" -ge "$MAX_JOBS" ]; do sleep 1; done
+  dl "$@" &
+  pids+=($!)
+}
+
+# Install a custom node's requirements. A failure prints a warning instead of stopping the script.
+node_install() {
+  local name
+  name=$(basename "$1" .git)
+  if [ -f "$COMFY/custom_nodes/$name/requirements.txt" ]; then
+    $PIP install -q -r "$COMFY/custom_nodes/$name/requirements.txt" \
       || echo "WARNING: pip install failed for $name (check for dependency conflicts)"
   fi
 }
 
-# ---------- 1. Model downloads (all in parallel, in the background) ----------
-pids=()
-
-# Krea-2
-dl "$BASE/diffusion_models/krea2_turbo_int8_convrot.safetensors" "$COMFY/models/diffusion_models" & pids+=($!)
-dl "$BASE/text_encoders/qwen3vl_4b_fp8_scaled.safetensors"       "$COMFY/models/text_encoders"    & pids+=($!)
-dl "$BASE/vae/qwen_image_vae.safetensors"                        "$COMFY/models/vae"              & pids+=($!)
-
-# Flux.2 Klein 9B
-dl "https://huggingface.co/Comfy-Org/flux2-dev/resolve/main/split_files/vae/flux2-vae.safetensors"   "$COMFY/models/vae"              & pids+=($!)
-dl "https://huggingface.co/Kiro930/flux-2-klein-9b/resolve/main/flux-2-klein-9b.safetensors"         "$COMFY/models/diffusion_models" & pids+=($!)
-dl "https://huggingface.co/SassyDiffusion/FLUX.2-klein-9B-bf16/resolve/main/qwen_3_8b.safetensors"   "$COMFY/models/text_encoders"    & pids+=($!)
-
-# Wan 2.1 / SCAIL-2
-dl "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/clip_vision/clip_vision_h.safetensors"                        "$COMFY/models/clip_vision"      & pids+=($!)
-dl "https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Lightx2v/lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16.safetensors"                   "$COMFY/models/loras"            & pids+=($!)
-dl "https://huggingface.co/Comfy-Org/sam3.1/resolve/main/checkpoints/sam3.1_multiplex_fp16.safetensors"                                                 "$COMFY/models/checkpoints"      & pids+=($!)
-dl "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors"          "$COMFY/models/text_encoders"    & pids+=($!)
-dl "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/vae/wan_2.1_vae.safetensors"                                   "$COMFY/models/vae"              & pids+=($!)
-dl "https://huggingface.co/Comfy-Org/SCAIL-2/resolve/main/diffusion_models/wan2.1_14B_SCAIL_2_int8_convrot.safetensors"                                 "$COMFY/models/diffusion_models" & pids+=($!)
-
-# Personal LoRAs (uncomment and edit once you pick a host, e.g. a private HF repo)
-# dl "https://huggingface.co/yourname/my-loras/resolve/main/my_lora.safetensors" "$COMFY/models/loras" & pids+=($!)
-
-# ---------- 2. Custom nodes (installed while the models download) ----------
+# ---------- 1. Clone custom nodes FIRST (some model files live inside node folders) ----------
 mkdir -p "$COMFY/custom_nodes"
 cd "$COMFY/custom_nodes"
+for url in "${NODES[@]}"; do
+  name=$(basename "$url" .git)
+  [ -d "$name" ] || git clone -q "$url" || echo "WARNING: clone failed for $name"
+done
 
-node https://github.com/romandev-codex/ComfyUI-Downloader
-node https://github.com/rgthree/rgthree-comfy
-node https://github.com/WASasquatch/was-node-suite-comfyui
-node https://github.com/Suzie1/ComfyUI_Comfyroll_CustomNodes
-node https://github.com/Jonseed/ComfyUI-Detail-Daemon
-node https://github.com/1038lab/ComfyUI-RMBG
-node https://github.com/MadiatorLabs/ComfyUI-RunpodDirect
-node https://github.com/kijai/ComfyUI-KJNodes
-node https://github.com/kosinkadink/ComfyUI-VideoHelperSuite
+# ---------- 2. pip installs run in the background while models download ----------
+(
+  for url in "${NODES[@]}"; do node_install "$url"; done
+) &
+pids+=($!)
 
-# ---------- 3. Wait for downloads and report failures ----------
+# ---------- 3. Model downloads (queued, up to MAX_JOBS at a time) ----------
+
+# Krea-2
+queue "$BASE/diffusion_models/krea2_turbo_int8_convrot.safetensors" "$COMFY/models/diffusion_models"
+queue "$BASE/text_encoders/qwen3vl_4b_fp8_scaled.safetensors"       "$COMFY/models/text_encoders"
+queue "$BASE/vae/qwen_image_vae.safetensors"                        "$COMFY/models/vae"
+
+# Flux.2 Klein 9B
+queue "https://huggingface.co/Comfy-Org/flux2-dev/resolve/main/split_files/vae/flux2-vae.safetensors"   "$COMFY/models/vae"
+queue "https://huggingface.co/Kiro930/flux-2-klein-9b/resolve/main/flux-2-klein-9b.safetensors"         "$COMFY/models/diffusion_models"
+queue "https://huggingface.co/SassyDiffusion/FLUX.2-klein-9B-bf16/resolve/main/qwen_3_8b.safetensors"   "$COMFY/models/text_encoders"
+
+# Wan 2.1 / SCAIL-2 (also shared with Wan 2.2 Animate: clip_vision_h, umt5, wan_2.1_vae)
+queue "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/clip_vision/clip_vision_h.safetensors"                "$COMFY/models/clip_vision"
+queue "https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Lightx2v/lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16.safetensors"           "$COMFY/models/loras"
+queue "https://huggingface.co/Comfy-Org/sam3.1/resolve/main/checkpoints/sam3.1_multiplex_fp16.safetensors"                                         "$COMFY/models/checkpoints"
+queue "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors"  "$COMFY/models/text_encoders"
+queue "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/vae/wan_2.1_vae.safetensors"                           "$COMFY/models/vae"
+queue "https://huggingface.co/Comfy-Org/SCAIL-2/resolve/main/diffusion_models/wan2.1_14B_SCAIL_2_int8_convrot.safetensors"                         "$COMFY/models/diffusion_models"
+
+# Wan 2.2 Animate
+queue "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_animate_14B_int8_convrot.safetensors" "$COMFY/models/diffusion_models"
+queue "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/loras/wan2.2_animate_14B_relight_lora_bf16.safetensors"       "$COMFY/models/loras"
+# Saved under the filename your workflow expects (differs from the filename in the URL)
+queue "https://huggingface.co/lightx2v/Wan2.2-Distill-Loras/resolve/main/wan2.2_i2v_A14b_low_noise_lora_rank64_lightx2v_4step_1022.safetensors"          "$COMFY/models/loras" "i2v_lightx2v_low_noise_model.safetensors"
+
+# Pose / detection / segmentation / interpolation
+queue "https://huggingface.co/Kijai/vitpose_comfy/resolve/main/onnx/vitpose_h_wholebody_model.onnx"        "$COMFY/models/detection"
+queue "https://huggingface.co/Kijai/vitpose_comfy/resolve/main/onnx/vitpose_h_wholebody_data.bin"          "$COMFY/models/detection"
+queue "https://huggingface.co/Wan-AI/Wan2.2-Animate-14B/resolve/main/process_checkpoint/det/yolov10m.onnx" "$COMFY/models/detection"
+queue "https://huggingface.co/Kijai/sam2-safetensors/resolve/main/sam2.1_hiera_base_plus.safetensors"      "$COMFY/models/sam2"
+queue "https://huggingface.co/hr16/DWPose-TorchScript-BatchSize5/resolve/main/dw-ll_ucoco_384_bs5.torchscript.pt" "$COMFY/custom_nodes/comfyui_controlnet_aux/ckpts/hr16/DWPose-TorchScript-BatchSize5"
+queue "https://huggingface.co/yzd-v/DWPose/resolve/main/yolox_l.onnx"                                      "$COMFY/custom_nodes/comfyui_controlnet_aux/ckpts/yzd-v/DWPose"
+queue "https://huggingface.co/MachineDelusions/RIFE/resolve/main/rife49.pth"                               "$COMFY/custom_nodes/ComfyUI-Frame-Interpolation/ckpts/rife"
+
+# Personal LoRAs (uncomment and edit once you pick a host, e.g. a private HF repo)
+# queue "https://huggingface.co/yourname/my-loras/resolve/main/my_lora.safetensors" "$COMFY/models/loras"
+
+# ---------- 4. Wait for everything and report failures ----------
 fail=0
 for pid in "${pids[@]}"; do wait "$pid" || fail=1; done
 if [ "$fail" -ne 0 ]; then
@@ -147,7 +186,7 @@ if [ "$fail" -ne 0 ]; then
   exit 1
 fi
 
-# ---------- 4. Finish line ----------
+# ---------- 5. Finish line ----------
 elapsed=$SECONDS
 echo ""
 echo "=============================================="
