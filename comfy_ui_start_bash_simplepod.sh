@@ -128,6 +128,8 @@ node https://github.com/Suzie1/ComfyUI_Comfyroll_CustomNodes
 node https://github.com/Jonseed/ComfyUI-Detail-Daemon
 node https://github.com/1038lab/ComfyUI-RMBG
 node https://github.com/MadiatorLabs/ComfyUI-RunpodDirect
+node https://github.com/kijai/ComfyUI-KJNodes
+node https://github.com/kosinkadink/ComfyUI-VideoHelperSuite
 
 # ---------- 3. Wait for downloads and report failures ----------
 fail=0
