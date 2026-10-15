@@ -8,6 +8,7 @@ COMFY="${COMFY:-/app/ComfyUI}"
 PIP="${PIP:-pip}"                       # e.g. PIP="/app/venv/bin/pip" if ComfyUI runs in a venv
 HF_TOKEN="${HF_TOKEN:-}"                # optional: only needed for gated/private repos
 MAX_JOBS="${MAX_JOBS:-6}"               # max simultaneous downloads
+REGISTRY="${REGISTRY:-1}"               # 1 = try comfy-cli (Comfy Registry) first, 0 = git clone only
 BASE=https://huggingface.co/Comfy-Org/Krea-2/resolve/main
 
 # ---------- Finish messages (10 per category) ----------
@@ -50,11 +51,6 @@ MSGS_SLOW=(
   "The pod has spoken: everything is installed. Go forth and create."
 )
 
-# Nodes whose requirements.txt should NOT be pip-installed
-SKIP_PIP=(
-  rgthree-comfy
-)
-
 # ---------- Custom nodes ----------
 NODES=(
   https://github.com/romandev-codex/ComfyUI-Downloader
@@ -77,6 +73,12 @@ NODES=(
   https://github.com/1038lab/ComfyUI-QwenVL
 )
 
+# Nodes whose requirements.txt should NOT be pip-installed (git-clone fallback only;
+# registry installs handle their own dependencies)
+SKIP_PIP=(
+  rgthree-comfy
+)
+
 # ---------- Helpers ----------
 fmt_time() { printf '%dm %02ds' $(( $1 / 60 )) $(( $1 % 60 )); }
 
@@ -97,6 +99,15 @@ if ! command -v aria2c >/dev/null 2>&1; then
   SUDO=""; [ "$(id -u)" -ne 0 ] && command -v sudo >/dev/null 2>&1 && SUDO="sudo"
   { $SUDO apt-get update -qq && $SUDO apt-get install -y -qq aria2; } \
     || echo "aria2 install failed, falling back to wget"
+fi
+
+# Make sure comfy-cli is available (otherwise everything falls back to git clone)
+if [ "$REGISTRY" = "1" ] && ! command -v comfy >/dev/null 2>&1; then
+  $PIP install -q comfy-cli || true
+  if ! command -v comfy >/dev/null 2>&1; then
+    echo "WARNING: comfy-cli not available (is it on PATH?), using git clone only"
+    REGISTRY=0
+  fi
 fi
 
 # Download helper: multi-connection aria2c, no pre-allocation, resumable.
@@ -125,10 +136,9 @@ queue() {
   pids+=($!)
 }
 
-# Install a custom node's requirements. A failure prints a warning instead of stopping the script.
-node_install() {
-  local name s
-  name=$(basename "$1" .git)
+# pip-install a git-cloned node's requirements (warns instead of stopping on failure)
+pip_reqs() {
+  local name="$1" s
   for s in "${SKIP_PIP[@]}"; do
     [ "$name" = "$s" ] && return 0
   done
@@ -138,21 +148,57 @@ node_install() {
   fi
 }
 
-# ---------- 1. Clone custom nodes FIRST (some model files live inside node folders) ----------
+# Try the Comfy Registry. Succeeds only if a new folder appeared in custom_nodes.
+registry_install() {
+  local before after
+  before=$(ls -1 | sort)
+  comfy --skip-prompt --workspace="$COMFY" node install "$1" >/dev/null 2>&1 || return 1
+  after=$(ls -1 | sort)
+  [ "$before" != "$after" ]
+}
+
+# Install one node: registry (latest) first, git clone as fallback.
+# Remembers what's done in a state file (registry folder names can differ from repo names).
+STATE="$COMFY/custom_nodes/.setup_installed"
+install_node() {
+  local url="$1" name id
+  name=$(basename "$url" .git)
+  id=$(echo "$name" | tr '[:upper:]' '[:lower:]')
+
+  grep -qxF "$name" "$STATE" 2>/dev/null && return 0
+
+  if [ -d "$name" ]; then
+    # Already cloned in an earlier run: just make sure requirements are installed
+    pip_reqs "$name"
+    echo "$name" >> "$STATE"
+    return 0
+  fi
+
+  if [ "$REGISTRY" = "1" ] && registry_install "$id"; then
+    echo "[registry] $name"
+  else
+    echo "[git]      $name"
+    if ! git clone -q "$url"; then
+      echo "WARNING: clone failed for $name"
+      return 0
+    fi
+    pip_reqs "$name"
+  fi
+  echo "$name" >> "$STATE"
+}
+
+# ---------- 1. Install custom nodes in the background (registry first, git fallback) ----------
 mkdir -p "$COMFY/custom_nodes"
 cd "$COMFY/custom_nodes"
-for url in "${NODES[@]}"; do
-  name=$(basename "$url" .git)
-  [ -d "$name" ] || git clone -q "$url" || echo "WARNING: clone failed for $name"
-done
+touch "$STATE"
 
-# ---------- 2. pip installs run in the background while models download ----------
 (
-  for url in "${NODES[@]}"; do node_install "$url"; done
+  cd "$COMFY/custom_nodes"
+  for url in "${NODES[@]}"; do install_node "$url"; done
 ) &
-pids+=($!)
+NODES_PID=$!
 
-# ---------- 3. Model downloads (queued, up to MAX_JOBS at a time) ----------
+# ---------- 2. Model downloads (queued, up to MAX_JOBS at a time) ----------
 
 # Krea-2
 queue "$BASE/diffusion_models/krea2_turbo_int8_convrot.safetensors" "$COMFY/models/diffusion_models"
@@ -191,17 +237,21 @@ queue "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/
 # Saved under the filename your workflow expects (differs from the filename in the URL)
 queue "https://huggingface.co/lightx2v/Wan2.2-Distill-Loras/resolve/main/wan2.2_i2v_A14b_low_noise_lora_rank64_lightx2v_4step_1022.safetensors"          "$COMFY/models/loras" "i2v_lightx2v_low_noise_model.safetensors"
 
-# Pose / detection / segmentation / interpolation
+# Pose / detection / segmentation
 queue "https://huggingface.co/Kijai/vitpose_comfy/resolve/main/onnx/vitpose_h_wholebody_model.onnx"        "$COMFY/models/detection"
 queue "https://huggingface.co/Kijai/vitpose_comfy/resolve/main/onnx/vitpose_h_wholebody_data.bin"          "$COMFY/models/detection"
 queue "https://huggingface.co/Wan-AI/Wan2.2-Animate-14B/resolve/main/process_checkpoint/det/yolov10m.onnx" "$COMFY/models/detection"
 queue "https://huggingface.co/Kijai/sam2-safetensors/resolve/main/sam2.1_hiera_base_plus.safetensors"      "$COMFY/models/sam2"
-queue "https://huggingface.co/hr16/DWPose-TorchScript-BatchSize5/resolve/main/dw-ll_ucoco_384_bs5.torchscript.pt" "$COMFY/custom_nodes/comfyui_controlnet_aux/ckpts/hr16/DWPose-TorchScript-BatchSize5"
-queue "https://huggingface.co/yzd-v/DWPose/resolve/main/yolox_l.onnx"                                      "$COMFY/custom_nodes/comfyui_controlnet_aux/ckpts/yzd-v/DWPose"
-queue "https://huggingface.co/MachineDelusions/RIFE/resolve/main/rife49.pth"                               "$COMFY/custom_nodes/ComfyUI-Frame-Interpolation/ckpts/rife"
 
 # Personal LoRAs (uncomment and edit once you pick a host, e.g. a private HF repo)
 # queue "https://huggingface.co/yourname/my-loras/resolve/main/my_lora.safetensors" "$COMFY/models/loras"
+
+# ---------- 3. Files that live INSIDE node folders: wait until nodes are installed first ----------
+wait "$NODES_PID" || true
+
+queue "https://huggingface.co/hr16/DWPose-TorchScript-BatchSize5/resolve/main/dw-ll_ucoco_384_bs5.torchscript.pt" "$COMFY/custom_nodes/comfyui_controlnet_aux/ckpts/hr16/DWPose-TorchScript-BatchSize5"
+queue "https://huggingface.co/yzd-v/DWPose/resolve/main/yolox_l.onnx"                                      "$COMFY/custom_nodes/comfyui_controlnet_aux/ckpts/yzd-v/DWPose"
+queue "https://huggingface.co/MachineDelusions/RIFE/resolve/main/rife49.pth"                               "$COMFY/custom_nodes/ComfyUI-Frame-Interpolation/ckpts/rife"
 
 # ---------- 4. Wait for everything and report failures ----------
 fail=0
