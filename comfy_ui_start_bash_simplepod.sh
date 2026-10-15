@@ -58,7 +58,7 @@ SKIP_PIP=(
 # ---------- Custom nodes ----------
 NODES=(
   https://github.com/romandev-codex/ComfyUI-Downloader
-  https://github.com/rgthree/rgthree-comfy
+  https://github.com/rgthree/rgthree-comfy/tree/main
   https://github.com/WASasquatch/was-node-suite-comfyui
   https://github.com/Suzie1/ComfyUI_Comfyroll_CustomNodes
   https://github.com/Jonseed/ComfyUI-Detail-Daemon
