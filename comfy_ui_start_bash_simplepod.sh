@@ -73,12 +73,6 @@ NODES=(
   https://github.com/1038lab/ComfyUI-QwenVL
 )
 
-# Nodes whose requirements.txt should NOT be pip-installed (git-clone fallback only;
-# registry installs handle their own dependencies)
-SKIP_PIP=(
-  rgthree-comfy
-)
-
 # ---------- Helpers ----------
 fmt_time() { printf '%dm %02ds' $(( $1 / 60 )) $(( $1 % 60 )); }
 
@@ -138,10 +132,7 @@ queue() {
 
 # pip-install a git-cloned node's requirements (warns instead of stopping on failure)
 pip_reqs() {
-  local name="$1" s
-  for s in "${SKIP_PIP[@]}"; do
-    [ "$name" = "$s" ] && return 0
-  done
+  local name="$1"
   if [ -f "$COMFY/custom_nodes/$name/requirements.txt" ]; then
     $PIP install -q -r "$COMFY/custom_nodes/$name/requirements.txt" \
       || echo "WARNING: pip install failed for $name (check for dependency conflicts)"
