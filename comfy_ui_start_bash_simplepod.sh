@@ -9,6 +9,9 @@ PIP="${PIP:-pip}"                       # e.g. PIP="/app/venv/bin/pip" if ComfyU
 HF_TOKEN="${HF_TOKEN:-}"                # optional: only needed for gated/private repos
 MAX_JOBS="${MAX_JOBS:-6}"               # max simultaneous downloads
 REGISTRY="${REGISTRY:-1}"               # 1 = try comfy-cli (Comfy Registry) first, 0 = git clone only
+FORCE_REGISTRY="${FORCE_REGISTRY:-0}"   # 1 = replace existing git/nightly nodes with registry releases
+GIT_USE_TAGS="${GIT_USE_TAGS:-1}"       # 1 = git fallback checks out the latest release tag
+TAG_MAX_BEHIND="${TAG_MAX_BEHIND:-50}"  # ignore a tag if it's more than this many commits behind the default branch
 BASE=https://huggingface.co/Comfy-Org/Krea-2/resolve/main
 
 # ---------- Finish messages (10 per category) ----------
@@ -73,6 +76,11 @@ NODES=(
   https://github.com/1038lab/ComfyUI-QwenVL
 )
 
+# Registry IDs default to the lowercased repo name. Override here if a node's registry ID differs.
+declare -A REG_ID=(
+  # [ComfyUI-WanVideoWrapper]="comfyui-wanvideowrapper"
+)
+
 # ---------- Helpers ----------
 fmt_time() { printf '%dm %02ds' $(( $1 / 60 )) $(( $1 % 60 )); }
 
@@ -130,6 +138,15 @@ queue() {
   pids+=($!)
 }
 
+# ---------- Node install helpers ----------
+LOG="$COMFY/custom_nodes/.registry.log"
+STATE="$COMFY/custom_nodes/.setup_installed"
+BACKUP_DIR="/tmp/node_backup_$$"
+
+mkdir -p "$COMFY/custom_nodes"
+cd "$COMFY/custom_nodes"
+touch "$STATE"
+
 # pip-install a git-cloned node's requirements (warns instead of stopping on failure)
 pip_reqs() {
   local name="$1"
@@ -139,53 +156,116 @@ pip_reqs() {
   fi
 }
 
-# Try the Comfy Registry. Succeeds only if a new folder appeared in custom_nodes.
+# Prints the installed folder for a node (case-insensitive match, or via the state file), or nothing.
+node_dir() {
+  local name="$1" dir rec
+  dir=$(find . -maxdepth 1 -mindepth 1 -type d -iname "$name" | head -n1 || true)
+  if [ -z "$dir" ]; then
+    rec=$(grep "^$name|" "$STATE" 2>/dev/null | tail -n1 || true)
+    if [ -n "$rec" ] && [ -d "${rec#*|}" ]; then dir="${rec#*|}"; fi
+  fi
+  echo "${dir#./}"
+}
+
+# Try the Comfy Registry (latest release). Succeeds only if a new folder appeared in custom_nodes.
+# Sets NEW_DIR to the folder it created. Errors go to $LOG.
+NEW_DIR=""
 registry_install() {
   local before after
   before=$(ls -1 | sort)
-  comfy --skip-prompt --workspace="$COMFY" node install "$1" >/dev/null 2>&1 || return 1
+  comfy --skip-prompt --workspace="$COMFY" node install "$1" >>"$LOG" 2>&1 || return 1
   after=$(ls -1 | sort)
-  [ "$before" != "$after" ]
+  [ "$before" != "$after" ] || return 1
+  NEW_DIR=$(comm -13 <(echo "$before") <(echo "$after") | head -n1)
 }
 
-# Install one node: registry (latest) first, git clone as fallback.
-# Remembers what's done in a state file (registry folder names can differ from repo names).
-STATE="$COMFY/custom_nodes/.setup_installed"
+# Git fallback: check out the latest release tag instead of the default branch (nightly).
+# Skips the tag if there are no tags, or the newest tag is stale (far behind the default branch).
+pin_latest_tag() {
+  local name="$1" tag behind
+  [ "$GIT_USE_TAGS" = "1" ] || return 0
+  tag=$(git -C "$name" tag --sort=-v:refname | head -n1 || true)
+  if [ -z "$tag" ]; then
+    echo "           no release tags, staying on default branch"
+    return 0
+  fi
+  behind=$(git -C "$name" rev-list --count "$tag"..HEAD 2>/dev/null || echo 9999)
+  if [ "$behind" -gt "$TAG_MAX_BEHIND" ]; then
+    echo "           latest tag $tag is $behind commits behind, staying on default branch"
+    return 0
+  fi
+  if git -C "$name" checkout -q "$tag" 2>/dev/null; then
+    echo "           pinned to latest tag $tag"
+  else
+    echo "           could not check out $tag, staying on default branch"
+  fi
+}
+
+# Report what a registry install actually produced
+registry_kind() {
+  if [ -d "$1/.git" ]; then echo "WARNING: has .git, so this is a git/nightly install"; else echo "registry release"; fi
+}
+
+# Install one node: registry (latest release) first, git clone (latest tag) as fallback.
+# Prints a status line for every node.
 install_node() {
-  local url="$1" name id
+  local url="$1" name id dir bak
   name=$(basename "$url" .git)
-  id=$(echo "$name" | tr '[:upper:]' '[:lower:]')
+  id="${REG_ID[$name]:-$(echo "$name" | tr '[:upper:]' '[:lower:]')}"
 
-  grep -qxF "$name" "$STATE" 2>/dev/null && return 0
-
-  if [ -d "$name" ]; then
-    # Already cloned in an earlier run: just make sure requirements are installed
-    pip_reqs "$name"
-    echo "$name" >> "$STATE"
+  dir=$(node_dir "$name")
+  if [ -n "$dir" ]; then
+    if [ -d "$dir/.git" ]; then
+      if [ "$FORCE_REGISTRY" = "1" ] && [ "$REGISTRY" = "1" ]; then
+        # Move the git/nightly copy aside, try the registry, and restore it if that fails
+        bak="$BACKUP_DIR/$dir"
+        mkdir -p "$BACKUP_DIR"
+        mv "$dir" "$bak"
+        if registry_install "$id"; then
+          rm -rf "$bak"
+          echo "[switched] $name -> $NEW_DIR ($(registry_kind "$NEW_DIR"))"
+          echo "$name|$NEW_DIR" >> "$STATE"
+          return 0
+        fi
+        mv "$bak" "$dir"
+        echo "[exists]   $name -> $dir (git/nightly, not available in registry, kept)"
+      else
+        echo "[exists]   $name -> $dir (git/nightly; run with FORCE_REGISTRY=1 to switch to the registry release)"
+      fi
+      pip_reqs "$dir"
+    else
+      echo "[exists]   $name -> $dir (registry release)"
+    fi
     return 0
   fi
 
   if [ "$REGISTRY" = "1" ] && registry_install "$id"; then
-    echo "[registry] $name"
+    echo "[registry] $name -> $NEW_DIR ($(registry_kind "$NEW_DIR"))"
+    echo "$name|$NEW_DIR" >> "$STATE"
   else
-    echo "[git]      $name"
+    echo "[git]      $name   (registry install failed or not found, see $LOG)"
     if ! git clone -q "$url"; then
       echo "WARNING: clone failed for $name"
       return 0
     fi
+    echo "$name|$name" >> "$STATE"
+    pin_latest_tag "$name"
     pip_reqs "$name"
   fi
-  echo "$name" >> "$STATE"
 }
 
 # ---------- 1. Install custom nodes in the background (registry first, git fallback) ----------
-mkdir -p "$COMFY/custom_nodes"
-cd "$COMFY/custom_nodes"
-touch "$STATE"
-
 (
   cd "$COMFY/custom_nodes"
   for url in "${NODES[@]}"; do install_node "$url"; done
+
+  echo "--- node check ---"
+  for url in "${NODES[@]}"; do
+    n=$(basename "$url" .git)
+    [ -n "$(node_dir "$n")" ] || echo "MISSING: $n"
+  done
+  echo "--- node check done ---"
+  rm -rf "$BACKUP_DIR"
 ) &
 NODES_PID=$!
 
@@ -240,9 +320,13 @@ queue "https://huggingface.co/Kijai/sam2-safetensors/resolve/main/sam2.1_hiera_b
 # ---------- 3. Files that live INSIDE node folders: wait until nodes are installed first ----------
 wait "$NODES_PID" || true
 
-queue "https://huggingface.co/hr16/DWPose-TorchScript-BatchSize5/resolve/main/dw-ll_ucoco_384_bs5.torchscript.pt" "$COMFY/custom_nodes/comfyui_controlnet_aux/ckpts/hr16/DWPose-TorchScript-BatchSize5"
-queue "https://huggingface.co/yzd-v/DWPose/resolve/main/yolox_l.onnx"                                      "$COMFY/custom_nodes/comfyui_controlnet_aux/ckpts/yzd-v/DWPose"
-queue "https://huggingface.co/MachineDelusions/RIFE/resolve/main/rife49.pth"                               "$COMFY/custom_nodes/ComfyUI-Frame-Interpolation/ckpts/rife"
+# Use the real folder names (registry folders can be lowercase)
+CN_AUX=$(node_dir comfyui_controlnet_aux);          CN_AUX="${CN_AUX:-comfyui_controlnet_aux}"
+FRAME_INT=$(node_dir ComfyUI-Frame-Interpolation);  FRAME_INT="${FRAME_INT:-ComfyUI-Frame-Interpolation}"
+
+queue "https://huggingface.co/hr16/DWPose-TorchScript-BatchSize5/resolve/main/dw-ll_ucoco_384_bs5.torchscript.pt" "$COMFY/custom_nodes/$CN_AUX/ckpts/hr16/DWPose-TorchScript-BatchSize5"
+queue "https://huggingface.co/yzd-v/DWPose/resolve/main/yolox_l.onnx"                                      "$COMFY/custom_nodes/$CN_AUX/ckpts/yzd-v/DWPose"
+queue "https://huggingface.co/MachineDelusions/RIFE/resolve/main/rife49.pth"                               "$COMFY/custom_nodes/$FRAME_INT/ckpts/rife"
 
 # ---------- 4. Wait for everything and report failures ----------
 fail=0
