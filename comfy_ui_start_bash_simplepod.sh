@@ -66,6 +66,9 @@ NODES=(
   https://github.com/kijai/ComfyUI-segment-anything-2
   https://github.com/kijai/ComfyUI-WanAnimatePreprocess
   https://github.com/kijai/ComfyUI-WanVideoWrapper
+  https://github.com/chrisgoringe/cg-use-everywhere
+  https://github.com/yolain/Comfyui-Easy-Use
+  https://github.com/ostris/ComfyUI-Krea2-Ostris-Edit
 )
 
 # ---------- Helpers ----------
@@ -144,8 +147,14 @@ pids+=($!)
 
 # Krea-2
 queue "$BASE/diffusion_models/krea2_turbo_int8_convrot.safetensors" "$COMFY/models/diffusion_models"
+queue "$BASE/diffusion_models/krea2_raw_bf16.safetensors"           "$COMFY/models/diffusion_models"
+queue "$BASE/loras/krea2_turbo_lora_rank_64_bf16.safetensors"       "$COMFY/models/loras"
+queue "https://huggingface.co/thedeoxen/Krea-2-pose-controlnet/resolve/main/krea2_turbo_openpose_controlnet.safetensors" "$COMFY/models/loras"
 queue "$BASE/text_encoders/qwen3vl_4b_fp8_scaled.safetensors"       "$COMFY/models/text_encoders"
 queue "$BASE/vae/qwen_image_vae.safetensors"                        "$COMFY/models/vae"
+queue "https://huggingface.co/Comfy-Org/PixelDiT/resolve/main/text_encoders/gemma_2_2b_it_elm_bf16.safetensors" "$COMFY/models/text_encoders"
+# PiD checkpoint, saved under the filename you specified (differs from the filename in the URL)
+queue "https://huggingface.co/nvidia/PiD/resolve/main/checkpoints/PiD_v1pt5_res2kto4k_sr4x_official_qwenimage_distill_4step/model_ema_bf16.pth" "$COMFY/models/diffusion_models" "qwen_image_pid.pth"
 
 # Flux.2 Klein 9B
 queue "https://huggingface.co/Comfy-Org/flux2-dev/resolve/main/split_files/vae/flux2-vae.safetensors"   "$COMFY/models/vae"
