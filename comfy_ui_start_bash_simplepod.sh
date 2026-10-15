@@ -50,6 +50,11 @@ MSGS_SLOW=(
   "The pod has spoken: everything is installed. Go forth and create."
 )
 
+# Nodes whose requirements.txt should NOT be pip-installed
+SKIP_PIP=(
+  rgthree-comfy
+)
+
 # ---------- Custom nodes ----------
 NODES=(
   https://github.com/romandev-codex/ComfyUI-Downloader
@@ -122,8 +127,11 @@ queue() {
 
 # Install a custom node's requirements. A failure prints a warning instead of stopping the script.
 node_install() {
-  local name
+  local name s
   name=$(basename "$1" .git)
+  for s in "${SKIP_PIP[@]}"; do
+    [ "$name" = "$s" ] && return 0
+  done
   if [ -f "$COMFY/custom_nodes/$name/requirements.txt" ]; then
     $PIP install -q -r "$COMFY/custom_nodes/$name/requirements.txt" \
       || echo "WARNING: pip install failed for $name (check for dependency conflicts)"
