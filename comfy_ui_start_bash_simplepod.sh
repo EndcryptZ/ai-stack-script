@@ -222,6 +222,7 @@ queue "https://huggingface.co/MachineDelusions/RIFE/resolve/main/rife49.pth"    
 # Personal LoRAs (private HF repo, token validated at the top of the script)
 queue "https://huggingface.co/Exnd/val/resolve/main/val_alvarez.safetensors"      "$COMFY/models/loras"
 queue "https://huggingface.co/Exnd/val/resolve/main/val_alvarez_nsfw.safetensors" "$COMFY/models/loras"
+queue "https://huggingface.co/Exnd/val/resolve/main/val_final.safetensors" "$COMFY/models/loras"
 
 # ---------- 4. Wait for everything and report failures ----------
 fail=0
