@@ -243,6 +243,9 @@ queue "https://huggingface.co/Exnd/val/resolve/main/val_final_000002000.safetens
 queue "https://huggingface.co/Exnd/val/resolve/main/val_final_000002250.safetensors" "$COMFY/models/loras"
 queue "https://huggingface.co/Exnd/val/resolve/main/val_final_000002500.safetensors" "$COMFY/models/loras"
 queue "https://huggingface.co/Exnd/val/resolve/main/val_final_000002750.safetensors" "$COMFY/models/loras"
+queue "https://huggingface.co/Exnd/val/resolve/main/HM1Girl-V1-Krea.safetensors" "$COMFY/models/loras"
+queue "https://huggingface.co/Exnd/val/resolve/main/HMCumshot_V1.0.safetensors" "$COMFY/models/loras"
+queue "https://huggingface.co/Exnd/val/resolve/main/PenisV2_minimax-h3_epoch60.safetensors" "$COMFY/models/loras"
 
 # ---------- 4. Wait for everything and report failures ----------
 fail=0
