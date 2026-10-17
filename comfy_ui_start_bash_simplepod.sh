@@ -215,6 +215,7 @@ queue "https://huggingface.co/Kijai/MiniMax-H3-TAE/resolve/main/vae_approx/taeh3
 queue "https://huggingface.co/lightx2v/Minimax-h3-Turbo/resolve/main/minimax_h3_fl2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors" "$COMFY/models/loras"
 queue "https://huggingface.co/lightx2v/Minimax-h3-Turbo/resolve/main/minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors" "$COMFY/models/loras"
 queue "https://huggingface.co/akatz-ai/MiniMax-H3-Character-Swap-LoRA/resolve/main/h3_character_swap_v1.5.safetensors" "$COMFY/models/loras"
+queue "https://huggingface.co/akatz-ai/MiniMax-H3-Character-Swap-LoRA/resolve/main/h3_character_swap_v1.5.safetensors" "$COMFY/models/loras"
 
 
 
@@ -246,6 +247,8 @@ queue "https://huggingface.co/Exnd/val/resolve/main/val_final_000002750.safetens
 queue "https://huggingface.co/Exnd/val/resolve/main/HM1Girl-V1-Krea.safetensors" "$COMFY/models/loras"
 queue "https://huggingface.co/Exnd/val/resolve/main/HMCumshot_V1.0.safetensors" "$COMFY/models/loras"
 queue "https://huggingface.co/Exnd/val/resolve/main/PenisV2_minimax-h3_epoch60.safetensors" "$COMFY/models/loras"
+queue "https://huggingface.co/Exnd/val/resolve/main/MM-H3%20-%20Blowjob%20v3.safetensors" "$COMFY/models/loras"
+
 
 # ---------- 4. Wait for everything and report failures ----------
 fail=0
