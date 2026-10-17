@@ -50,7 +50,7 @@ MSGS_SLOW=(
   "The pod has spoken: everything is installed. Go forth and create."
 )
 
-# ---------- Custom nodes ----------
+# ---------- Custom nodes (all cloned from their main branch) ----------
 NODES=(
   https://github.com/romandev-codex/ComfyUI-Downloader
   https://github.com/rgthree/rgthree-comfy
@@ -157,12 +157,21 @@ node_install() {
   fi
 }
 
-# ---------- 1. Clone custom nodes FIRST (some model files live inside node folders) ----------
+# ---------- 1. Clone custom nodes FIRST, always on the main branch (some model files live inside node folders) ----------
 mkdir -p "$COMFY/custom_nodes"
 cd "$COMFY/custom_nodes"
 for url in "${NODES[@]}"; do
   name=$(basename "$url" .git)
-  [ -d "$name" ] || git clone -q "$url" || echo "WARNING: clone failed for $name"
+  if [ -d "$name/.git" ]; then
+    # Already cloned: switch to main and update to the latest commit
+    git -C "$name" fetch -q origin main \
+      && git -C "$name" checkout -q -B main origin/main \
+      || echo "WARNING: couldn't update $name to main"
+  elif [ -d "$name" ]; then
+    echo "WARNING: $name exists but isn't a git clone (registry/zip install?); skipping. Delete it to get main."
+  else
+    git clone -q -b main "$url" || echo "WARNING: clone failed for $name (main)"
+  fi
 done
 
 # ---------- 2. pip installs run in the background while models download ----------
