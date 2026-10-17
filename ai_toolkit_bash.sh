@@ -41,6 +41,11 @@ echo "==> Creating virtual environment"
 # shellcheck disable=SC1091
 source "$VENV_DIR/bin/activate"
 
+echo "==> Upgrading pip and pre-installing typing_extensions from PyPI"
+# The PyTorch index doesn't carry every dependency, so grab these from PyPI first
+pip3 install --upgrade pip setuptools wheel
+pip3 install "typing_extensions>=4.10.0"
+
 echo "==> Installing PyTorch (CUDA 13.0)"
 pip3 install --no-cache-dir \
     torch==2.13.0 torchvision==0.28.0 torchaudio==2.11.0 \
