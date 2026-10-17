@@ -6,7 +6,7 @@ SECONDS=0
 # ---------- Config (override any of these via environment variables) ----------
 COMFY="${COMFY:-/app/ComfyUI}"
 PIP="${PIP:-pip}"                       # e.g. PIP="/app/venv/bin/pip" if ComfyUI runs in a venv
-HF_TOKEN="${HF_TOKEN:-}"                # optional: only needed for gated/private repos
+HF_TOKEN="${HF_TOKEN:-}"                # REQUIRED: needed for the private LoRAs (Exnd/val); script stops if invalid
 MAX_JOBS="${MAX_JOBS:-6}"               # max simultaneous downloads
 BASE=https://huggingface.co/Comfy-Org/Krea-2/resolve/main
 
@@ -86,6 +86,34 @@ if [ ! -d "$COMFY" ]; then
   exit 1
 fi
 
+# ---------- HF token check (STOPS the script if the token is missing or invalid) ----------
+# Prompt from the terminal (works even when the script is piped into bash)
+if [ -z "$HF_TOKEN" ]; then
+  { read -rsp "Enter your HF token: " HF_TOKEN </dev/tty; echo; } 2>/dev/null || true
+fi
+if [ -z "$HF_TOKEN" ]; then
+  echo "ERROR: no HF token provided. It is required to download the private LoRAs."
+  exit 1
+fi
+
+code=$(curl -s -o /dev/null -w '%{http_code}' -m 15 \
+  -H "Authorization: Bearer $HF_TOKEN" https://huggingface.co/api/whoami-v2 || true)
+if [ "$code" != "200" ]; then
+  echo "ERROR: HF token is invalid or could not be verified (HTTP ${code:-none}). Stopping."
+  exit 1
+fi
+
+# Make sure the token can actually reach the private LoRA repo (302 = redirect to the file = OK)
+code=$(curl -s -o /dev/null -w '%{http_code}' -m 15 -I \
+  -H "Authorization: Bearer $HF_TOKEN" \
+  "https://huggingface.co/Exnd/val/resolve/main/val_alvarez.safetensors" || true)
+case "$code" in
+  200|302) echo "HF token OK, private repo accessible." ;;
+  *)
+    echo "ERROR: token is valid but can't access Exnd/val (HTTP ${code:-none}). Stopping."
+    exit 1 ;;
+esac
+
 # Make sure aria2 is installed (falls back to wget if the install fails)
 if ! command -v aria2c >/dev/null 2>&1; then
   SUDO=""; [ "$(id -u)" -ne 0 ] && command -v sudo >/dev/null 2>&1 && SUDO="sudo"
@@ -95,7 +123,7 @@ fi
 
 # Download helper: multi-connection aria2c, no pre-allocation, resumable.
 # Usage: dl URL DIR [SAVE_AS_FILENAME]   (filename defaults to the one in the URL)
-# Sends the HF token only if HF_TOKEN is set.
+# Sends the (already validated) HF token with every request.
 dl() {
   local url="$1" dir="$2" file="${3:-$(basename "$1")}"
   mkdir -p "$dir"
@@ -191,8 +219,9 @@ queue "https://huggingface.co/hr16/DWPose-TorchScript-BatchSize5/resolve/main/dw
 queue "https://huggingface.co/yzd-v/DWPose/resolve/main/yolox_l.onnx"                                      "$COMFY/custom_nodes/comfyui_controlnet_aux/ckpts/yzd-v/DWPose"
 queue "https://huggingface.co/MachineDelusions/RIFE/resolve/main/rife49.pth"                               "$COMFY/custom_nodes/ComfyUI-Frame-Interpolation/ckpts/rife"
 
-# Personal LoRAs (uncomment and edit once you pick a host, e.g. a private HF repo)
-# queue "https://huggingface.co/yourname/my-loras/resolve/main/my_lora.safetensors" "$COMFY/models/loras"
+# Personal LoRAs (private HF repo, token validated at the top of the script)
+queue "https://huggingface.co/Exnd/val/resolve/main/val_alvarez.safetensors"      "$COMFY/models/loras"
+queue "https://huggingface.co/Exnd/val/resolve/main/val_alvarez_nsfw.safetensors" "$COMFY/models/loras"
 
 # ---------- 4. Wait for everything and report failures ----------
 fail=0
