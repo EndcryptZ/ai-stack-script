@@ -197,6 +197,12 @@ queue "https://huggingface.co/Comfy-Org/flux2-dev/resolve/main/split_files/vae/f
 queue "https://huggingface.co/Kiro930/flux-2-klein-9b/resolve/main/flux-2-klein-9b.safetensors"         "$COMFY/models/diffusion_models"
 queue "https://huggingface.co/SassyDiffusion/FLUX.2-klein-9B-bf16/resolve/main/qwen_3_8b.safetensors"   "$COMFY/models/text_encoders"
 
+# Qwen Image 2.1
+queue "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/vae/qwen_image_2.1_vae_bf16.safetensors"   "$COMFY/models/vae"
+queue "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/diffusion_models/qwen_image_2.1_int8_convrot.safetensors"         "$COMFY/models/diffusion_models"
+queue "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/text_encoders/qwen3vl_8b_int8_convrot.safetensors"   "$COMFY/models/text_encoders"
+
+
 # Wan 2.1 / SCAIL-2 (also shared with Wan 2.2 Animate: clip_vision_h, umt5, wan_2.1_vae)
 queue "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/clip_vision/clip_vision_h.safetensors"                "$COMFY/models/clip_vision"
 queue "https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Lightx2v/lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16.safetensors"           "$COMFY/models/loras"
