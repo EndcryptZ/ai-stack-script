@@ -69,6 +69,7 @@ NODES=(
   https://github.com/chrisgoringe/cg-use-everywhere
   https://github.com/yolain/Comfyui-Easy-Use
   https://github.com/ostris/ComfyUI-Krea2-Ostris-Edit
+  https://github.com/LBH-123-AI/Comfyui_Minimax_h3_latent_Upscaler
 )
 
 # ---------- Helpers ----------
