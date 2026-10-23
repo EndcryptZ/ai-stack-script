@@ -267,6 +267,7 @@ queue "https://huggingface.co/Exnd/val/resolve/main/MM-H3%20-%20Blowjob%20v3.saf
 queue "https://huggingface.co/Exnd/val/resolve/main/bounceV07-000230_Intense.safetensors" "$COMFY/models/loras"
 queue "https://huggingface.co/Exnd/val/resolve/main/bounceV07_fl2va-000230_Intense.safetensors" "$COMFY/models/loras"
 queue "https://huggingface.co/Exnd/val/resolve/main/HMNSFW-AIO-V2.5.safetensors" "$COMFY/models/loras"
+queue "https://huggingface.co/Exnd/val/resolve/main/zy_Amateur_Pov_H3.safetensors" "$COMFY/models/loras"
 
 
 
