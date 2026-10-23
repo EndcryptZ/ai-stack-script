@@ -71,6 +71,7 @@ NODES=(
   https://github.com/ostris/ComfyUI-Krea2-Ostris-Edit
   https://github.com/LBH-123-AI/Comfyui_Minimax_h3_latent_Upscaler
   https://github.com/nova452/Rebalance-Pack
+  https://github.com/1038lab/ComfyUI-QwenVL
 )
 
 # ---------- Helpers ----------
