@@ -279,9 +279,8 @@ queue "https://huggingface.co/Exnd/val/resolve/main/real_3d_krea2_loraholic.safe
 queue "https://huggingface.co/Exnd/val/resolve/main/wetness_krea2_loraholic.safetensors" "$COMFY/models/loras"
 queue "https://huggingface.co/Exnd/val/resolve/main/zoom_krea2_loraholic.safetensors" "$COMFY/models/loras"
 queue "https://huggingface.co/Exnd/val/resolve/main/ass_v2_krea2_loraholic.safetensors" "$COMFY/models/loras"
-
-
-
+queue "https://huggingface.co/conradlocke/krea2-identity-edit/resolve/main/krea2_general_edit_v2.safetensors" "$COMFY/models/loras"
+queue "https://huggingface.co/conradlocke/krea2-identity-edit/resolve/main/krea2_identity_edit_v2.safetensors" "$COMFY/models/loras"
 
 
 # ---------- 4. Wait for everything and report failures ----------
