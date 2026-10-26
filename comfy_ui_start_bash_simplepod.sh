@@ -269,6 +269,15 @@ queue "https://huggingface.co/Exnd/val/resolve/main/bounceV07_fl2va-000230_Inten
 queue "https://huggingface.co/Exnd/val/resolve/main/HMNSFW-AIO-V2.5.safetensors" "$COMFY/models/loras"
 queue "https://huggingface.co/Exnd/val/resolve/main/zy_Amateur_Pov_H3.safetensors" "$COMFY/models/loras"
 queue "https://huggingface.co/Exnd/val/resolve/main/breast_size_v2_krea2_loraholic.safetensors" "$COMFY/models/loras"
+queue "https://huggingface.co/Exnd/val/resolve/main/breast_fake_real_krea2_loraholic.safetensors" "$COMFY/models/loras"
+queue "https://huggingface.co/Exnd/val/resolve/main/brightness_krea2_loraholic.safetensors" "$COMFY/models/loras"
+queue "https://huggingface.co/Exnd/val/resolve/main/candid_krea2_loraholic.safetensors" "$COMFY/models/loras"
+queue "https://huggingface.co/Exnd/val/resolve/main/detail_slider_krea2_loraholic.safetensors" "$COMFY/models/loras"
+queue "https://huggingface.co/Exnd/val/resolve/main/nsfw_helper_slider_loraholic.safetensors" "$COMFY/models/loras"
+queue "https://huggingface.co/Exnd/val/resolve/main/real_3d_krea2_loraholic.safetensors" "$COMFY/models/loras"
+queue "wetness_krea2_loraholic.safetensors" "$COMFY/models/loras"
+queue "https://huggingface.co/Exnd/val/resolve/main/zoom_krea2_loraholic.safetensors" "$COMFY/models/loras"
+
 
 
 
