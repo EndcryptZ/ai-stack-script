@@ -275,8 +275,10 @@ queue "https://huggingface.co/Exnd/val/resolve/main/candid_krea2_loraholic.safet
 queue "https://huggingface.co/Exnd/val/resolve/main/detail_slider_krea2_loraholic.safetensors" "$COMFY/models/loras"
 queue "https://huggingface.co/Exnd/val/resolve/main/nsfw_helper_slider_loraholic.safetensors" "$COMFY/models/loras"
 queue "https://huggingface.co/Exnd/val/resolve/main/real_3d_krea2_loraholic.safetensors" "$COMFY/models/loras"
-queue "wetness_krea2_loraholic.safetensors" "$COMFY/models/loras"
+queue "https://huggingface.co/Exnd/val/resolve/main/wetness_krea2_loraholic.safetensors" "$COMFY/models/loras"
 queue "https://huggingface.co/Exnd/val/resolve/main/zoom_krea2_loraholic.safetensors" "$COMFY/models/loras"
+queue "https://huggingface.co/Exnd/val/resolve/main/ass_v2_krea2_loraholic.safetensors" "$COMFY/models/loras"
+
 
 
 
