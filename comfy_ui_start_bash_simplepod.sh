@@ -72,6 +72,7 @@ NODES=(
   https://github.com/LBH-123-AI/Comfyui_Minimax_h3_latent_Upscaler
   https://github.com/nova452/Rebalance-Pack
   https://github.com/1038lab/ComfyUI-QwenVL
+  https://github.com/lbouaraba/comfyui-krea2edit
 )
 
 # ---------- Helpers ----------
