@@ -214,14 +214,6 @@ queue "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/diffusion_mo
 queue "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/text_encoders/qwen3vl_8b_int8_convrot.safetensors"   "$COMFY/models/text_encoders"
 
 
-# Wan 2.1 / SCAIL-2 (also shared with Wan 2.2 Animate: clip_vision_h, umt5, wan_2.1_vae)
-queue "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/clip_vision/clip_vision_h.safetensors"                "$COMFY/models/clip_vision"
-queue "https://huggingface.co/Kijai/WanVideo_comfy/resolve/main/Lightx2v/lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16.safetensors"           "$COMFY/models/loras"
-queue "https://huggingface.co/Comfy-Org/sam3.1/resolve/main/checkpoints/sam3.1_multiplex_fp16.safetensors"                                         "$COMFY/models/checkpoints"
-queue "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors"  "$COMFY/models/text_encoders"
-queue "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/vae/wan_2.1_vae.safetensors"                           "$COMFY/models/vae"
-queue "https://huggingface.co/Comfy-Org/SCAIL-2/resolve/main/diffusion_models/wan2.1_14B_SCAIL_2_int8_convrot.safetensors"                         "$COMFY/models/diffusion_models"
-
 # MiniMax-H3
 queue "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_fl2va_int8_convrot.safetensors"      "$COMFY/models/diffusion_models"
 queue "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_ref2va_int8_convrot.safetensors"      "$COMFY/models/diffusion_models"
@@ -234,13 +226,6 @@ queue "https://huggingface.co/lightx2v/Minimax-h3-Turbo/resolve/main/minimax_h3_
 queue "https://huggingface.co/akatz-ai/MiniMax-H3-Character-Swap-LoRA/resolve/main/h3_character_swap_v1.5.safetensors" "$COMFY/models/loras"
 queue "https://huggingface.co/LBH-123-AI/Minimax_h3_latent_Upscaler/resolve/main/minimax_h3_latent_upscaler_3d_conv_v1/minimax_h3_latent_upscaler_3d_conv_v1_fp16.safetensors" "$COMFY/models/latent_upscale_models"
 
-
-
-# Wan 2.2 Animate
-queue "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/diffusion_models/wan2.2_animate_14B_int8_convrot.safetensors" "$COMFY/models/diffusion_models"
-queue "https://huggingface.co/Comfy-Org/Wan_2.2_ComfyUI_Repackaged/resolve/main/split_files/loras/wan2.2_animate_14B_relight_lora_bf16.safetensors"       "$COMFY/models/loras"
-# Saved under the filename your workflow expects (differs from the filename in the URL)
-queue "https://huggingface.co/lightx2v/Wan2.2-Distill-Loras/resolve/main/wan2.2_i2v_A14b_low_noise_lora_rank64_lightx2v_4step_1022.safetensors"          "$COMFY/models/loras" "i2v_lightx2v_low_noise_model.safetensors"
 
 # Pose / detection / segmentation / interpolation
 queue "https://huggingface.co/Kijai/vitpose_comfy/resolve/main/onnx/vitpose_h_wholebody_model.onnx"        "$COMFY/models/detection"
