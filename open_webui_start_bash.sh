@@ -9,7 +9,7 @@ DATA_ROOT=/workspace                      # RunPod persistent volume
 OLLAMA_MODELS_DIR="$DATA_ROOT/ollama/models"
 WEBUI_DATA_DIR="$DATA_ROOT/open-webui-data"
 WEBUI_VENV="$DATA_ROOT/open-webui-venv"
-MODEL="orcarouter/Qwen3.8-27B-Uncensored:q4_K_M"
+MODEL="ttempvnn/DeepSeek-R1-Distill-Qwen-32B-abliterated-Q4-K-M:latest"
 
 echo "==> [1/6] apt update + prerequisites"
 apt-get update
