@@ -73,8 +73,6 @@ NODES=(
   https://github.com/nova452/Rebalance-Pack
   https://github.com/1038lab/ComfyUI-QwenVL
   https://github.com/lbouaraba/comfyui-krea2edit
-  https://github.com/thaakeno/ComfyUI-MiniMax-H3-Studio
-  https://github.com/thaakeno/comfyui-universal-asset-downloader
 )
 
 # ---------- Helpers ----------
