@@ -9,7 +9,10 @@ DATA_ROOT=/workspace                      # RunPod persistent volume
 OLLAMA_MODELS_DIR="$DATA_ROOT/ollama/models"
 WEBUI_DATA_DIR="$DATA_ROOT/open-webui-data"
 WEBUI_VENV="$DATA_ROOT/open-webui-venv"
-MODEL="ttempvnn/DeepSeek-R1-Distill-Qwen-32B-abliterated-Q4-K-M:latest"
+MODELS=(
+  "ttempvnn/DeepSeek-R1-Distill-Qwen-32B-abliterated-Q4-K-M:latest"
+  "orcarouter/Qwen3.8-27B-Uncensored:latest"
+)
 
 echo "==> [1/6] apt update + prerequisites"
 apt-get update
@@ -59,8 +62,11 @@ if [ "$OLLAMA_UP" -ne 1 ]; then
   exit 1
 fi
 
-echo "==> [5/6] Pulling model: $MODEL"
-OLLAMA_HOST="127.0.0.1:$OLLAMA_PORT" ollama pull "$MODEL"
+echo "==> [5/6] Pulling models"
+for MODEL in "${MODELS[@]}"; do
+  echo "    Pulling model: $MODEL"
+  OLLAMA_HOST="127.0.0.1:$OLLAMA_PORT" ollama pull "$MODEL"
+done
 
 echo "==> [6/6] Starting Open WebUI in screen session 'openwebui' on port $WEBUI_PORT"
 if screen -list | grep -q "\.openwebui"; then
@@ -81,4 +87,7 @@ echo
 echo "Attach:  screen -r ollama   |   screen -r openwebui   (detach with Ctrl+A, then D)"
 echo "Open WebUI: expose HTTP port $WEBUI_PORT on the pod, then use the RunPod proxy URL:"
 echo "  https://<POD_ID>-$WEBUI_PORT.proxy.runpod.net"
-echo "Run the model:  ollama run $MODEL"
+echo "Available Ollama models:"
+for MODEL in "${MODELS[@]}"; do
+  echo "  - $MODEL"
+done
