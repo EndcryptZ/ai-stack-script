@@ -77,6 +77,12 @@ NODES=(
   https://github.com/thaakeno/comfyui-universal-asset-downloader
 )
 
+# Optional: list custom nodes where requirements.txt should be skipped.
+# Add more repo URLs here if you want to suppress pip installs for them too.
+SKIP_PIP_NODES=(
+  "https://github.com/thaakeno/comfyui-universal-asset-downloader"
+)
+
 # ---------- Helpers ----------
 fmt_time() { printf '%dm %02ds' $(( $1 / 60 )) $(( $1 % 60 )); }
 
@@ -131,7 +137,7 @@ fi
 # Usage: dl URL DIR [SAVE_AS_FILENAME]   (filename defaults to the one in the URL)
 # Sends the (already validated) HF token with every request.
 dl() {
-  local url="$1" dir="$2" file="${3:-$(basename "$1")}"
+  local url="$1" dir="$2" file="${3:-$(basename "$1")}" 
   mkdir -p "$dir"
   if command -v aria2c >/dev/null 2>&1; then
     local args=(-x 8 -s 8 -k 32M --file-allocation=none -c
@@ -155,8 +161,17 @@ queue() {
 
 # Install a custom node's requirements. A failure prints a warning instead of stopping the script.
 node_install() {
+  local url="$1"
   local name
-  name=$(basename "$1" .git)
+  name=$(basename "$url" .git)
+
+  for skip_url in "${SKIP_PIP_NODES[@]}"; do
+    if [ "$url" = "$skip_url" ]; then
+      echo "Skipping pip install for $name (requirements intentionally omitted)"
+      return
+    fi
+  done
+
   if [ -f "$COMFY/custom_nodes/$name/requirements.txt" ]; then
     $PIP install -q -r "$COMFY/custom_nodes/$name/requirements.txt" \
       || echo "WARNING: pip install failed for $name (check for dependency conflicts)"
@@ -226,7 +241,7 @@ queue "https://huggingface.co/Kijai/MiniMax-H3-TAE/resolve/main/vae_approx/taeh3
 queue "https://huggingface.co/lightx2v/Minimax-h3-Turbo/resolve/main/minimax_h3_fl2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors" "$COMFY/models/loras"
 queue "https://huggingface.co/lightx2v/Minimax-h3-Turbo/resolve/main/minimax_h3_ref2v_turbo_8step_v1.0_768p_comfyui_bf16.safetensors" "$COMFY/models/loras"
 queue "https://huggingface.co/akatz-ai/MiniMax-H3-Character-Swap-LoRA/resolve/main/h3_character_swap_v1.5.safetensors" "$COMFY/models/loras"
-queue "https://huggingface.co/LBH-123-AI/Minimax_h3_latent_Upscaler/resolve/main/minimax_h3_latent_upscaler_3d_conv_v1/minimax_h3_latent_upscaler_3d_conv_v1_fp16.safetensors" "$COMFY/models/latent_upscale_models"
+queue "https://huggingface.co/LBH-123-AI/Minimax_h3_latent_Upscaler/resolve/main/minimax_h3_latent_upscaler_3d_conv_v1/minimax_h3_latent_upscaler_3d_conv_v1_fp16.safetensors" "$COMFY/models/latent_upscaler_models"
 
 
 # Pose / detection / segmentation / interpolation
