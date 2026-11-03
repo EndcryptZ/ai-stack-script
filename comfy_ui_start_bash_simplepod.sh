@@ -246,6 +246,7 @@ queue "https://huggingface.co/lightx2v/Minimax-h3-Turbo/resolve/main/minimax_h3_
 queue "https://huggingface.co/akatz-ai/MiniMax-H3-Character-Swap-LoRA/resolve/main/h3_character_swap_v1.5.safetensors" "$COMFY/models/loras"
 queue "https://huggingface.co/LBH-123-AI/Minimax_h3_latent_Upscaler/resolve/671ecf0f1d0a4dd0855f0cb6664bfb6f65c7e491/minimax_h3_latent_upscaler_3d_fp16.safetensors" "$COMFY/models/latent_upscale_models"
 queue "https://huggingface.co/LBH-123-AI/Minimax_h3_latent_Upscaler/resolve/main/minimax_h3_latent_upscaler_3d_conv_v1/minimax_h3_latent_upscaler_3d_conv_v1_fp16.safetensors" "$COMFY/models/latent_upscale_models"
+queue "https://huggingface.co/Comfy-Org/Frame-Interpolation/resolve/6475b9bb5a8a9a8bd4c471d6adea35ebe594e9dd/frame_interpolation/rife_v4.26.safetensors" "$COMFY/models/frame_interpolation"
 
 # Pose / detection / segmentation / interpolation
 queue "https://huggingface.co/Kijai/vitpose_comfy/resolve/main/onnx/vitpose_h_wholebody_model.onnx"        "$COMFY/models/detection"
