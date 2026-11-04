@@ -74,14 +74,11 @@ NODES=(
   https://github.com/1038lab/ComfyUI-QwenVL
   https://github.com/lbouaraba/comfyui-krea2edit
   https://github.com/EndcryptZ/ComfyUI-MiniMax-H3-Studio
-  https://github.com/thaakeno/comfyui-universal-asset-downloader
-  https://github.com/TensorVizion/Minimax-H3-Video-Music-Nodes
 )
 
 # Optional: list custom nodes where requirements.txt should be skipped.
 # Add more repo URLs here if you want to suppress pip installs for them too.
 SKIP_PIP_NODES=(
-  "https://github.com/thaakeno/comfyui-universal-asset-downloader"
 )
 
 # ---------- Helpers ----------
