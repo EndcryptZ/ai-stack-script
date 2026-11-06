@@ -176,6 +176,23 @@ node_install() {
   fi
 }
 
+# ---------- 0. Update ComfyUI itself to the latest version (master) ----------
+echo "Updating ComfyUI to the latest version..."
+if [ -d "$COMFY/.git" ]; then
+  if git -C "$COMFY" fetch -q origin master \
+    && git -C "$COMFY" checkout -q master \
+    && git -C "$COMFY" pull -q --ff-only origin master; then
+    echo "ComfyUI is now at $(git -C "$COMFY" log -1 --format='%h %cd' --date=short)"
+    # Pull in new core dependencies (includes the frontend package)
+    $PIP install -q -r "$COMFY/requirements.txt" \
+      || echo "WARNING: pip install of ComfyUI requirements failed (check for dependency conflicts)"
+  else
+    echo "WARNING: couldn't update ComfyUI (local changes or diverged history?); continuing with the current version."
+  fi
+else
+  echo "WARNING: $COMFY isn't a git clone, so it can't be auto-updated; continuing with the current version."
+fi
+
 # ---------- 1. Clone custom nodes FIRST, always on the main branch (some model files live inside node folders) ----------
 mkdir -p "$COMFY/custom_nodes"
 cd "$COMFY/custom_nodes"
@@ -236,6 +253,13 @@ queue "https://huggingface.co/akatz-ai/MiniMax-H3-Character-Swap-LoRA/resolve/ma
 queue "https://huggingface.co/LBH-123-AI/Minimax_h3_latent_Upscaler/resolve/671ecf0f1d0a4dd0855f0cb6664bfb6f65c7e491/minimax_h3_latent_upscaler_3d_fp16.safetensors" "$COMFY/models/latent_upscale_models"
 queue "https://huggingface.co/LBH-123-AI/Minimax_h3_latent_Upscaler/resolve/main/minimax_h3_latent_upscaler_3d_conv_v1/minimax_h3_latent_upscaler_3d_conv_v1_fp16.safetensors" "$COMFY/models/latent_upscale_models"
 queue "https://huggingface.co/Comfy-Org/Frame-Interpolation/resolve/6475b9bb5a8a9a8bd4c471d6adea35ebe594e9dd/frame_interpolation/rife_v4.26.safetensors" "$COMFY/models/frame_interpolation"
+
+# P-H3-Image
+queue "https://huggingface.co/PrunaAI/P-H3-Image-Comfy/resolve/main/diffusion_models/p-h3-image_int8_convrot.safetensors"                  "$COMFY/models/diffusion_models"
+queue "https://huggingface.co/PrunaAI/P-H3-Image-Comfy/resolve/main/loras/p-h3-image_lora_bf16.safetensors"                                "$COMFY/models/loras"
+queue "https://huggingface.co/PrunaAI/P-H3-Image-Comfy/resolve/main/text_encoders/p-h3-image_prompt_upsampler_int8_convrot.safetensors"    "$COMFY/models/text_encoders"
+queue "https://huggingface.co/PrunaAI/P-H3-Image-Comfy/resolve/main/text_encoders/p-h3-image_text_encoder_int8_convrot.safetensors"        "$COMFY/models/text_encoders"
+queue "https://huggingface.co/PrunaAI/P-H3-Image-Comfy/resolve/main/vae/p-h3-image_vae_bf16.safetensors"                                   "$COMFY/models/vae"
 
 # Pose / detection / segmentation / interpolation
 queue "https://huggingface.co/Kijai/vitpose_comfy/resolve/main/onnx/vitpose_h_wholebody_model.onnx"        "$COMFY/models/detection"
