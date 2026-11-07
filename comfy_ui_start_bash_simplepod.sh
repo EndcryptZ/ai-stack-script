@@ -255,10 +255,10 @@ queue "https://huggingface.co/LBH-123-AI/Minimax_h3_latent_Upscaler/resolve/main
 queue "https://huggingface.co/Comfy-Org/Frame-Interpolation/resolve/6475b9bb5a8a9a8bd4c471d6adea35ebe594e9dd/frame_interpolation/rife_v4.26.safetensors" "$COMFY/models/frame_interpolation"
 
 # P-H3-Image
-queue "https://huggingface.co/PrunaAI/P-H3-Image-Comfy/resolve/main/diffusion_models/p-h3-image_bf16.safetensors"                  "$COMFY/models/diffusion_models"
+queue "https://huggingface.co/PrunaAI/P-H3-Image-Comfy/resolve/main/diffusion_models/p-h3-image_int8_convrot.safetensors"                  "$COMFY/models/diffusion_models"
 queue "https://huggingface.co/PrunaAI/P-H3-Image-Comfy/resolve/main/loras/p-h3-image_lora_bf16.safetensors"                                "$COMFY/models/loras"
-queue "https://huggingface.co/PrunaAI/P-H3-Image-Comfy/resolve/main/text_encoders/p-h3-image_prompt_upsampler_bf16.safetensors"            "$COMFY/models/text_encoders"
-queue "https://huggingface.co/PrunaAI/P-H3-Image-Comfy/resolve/main/text_encoders/p-h3-image_text_encoder_bf16.safetensors"                "$COMFY/models/text_encoders"
+queue "https://huggingface.co/PrunaAI/P-H3-Image-Comfy/resolve/main/text_encoders/p-h3-image_prompt_upsampler_int8_convrot.safetensors"    "$COMFY/models/text_encoders"
+queue "https://huggingface.co/PrunaAI/P-H3-Image-Comfy/resolve/main/text_encoders/p-h3-image_text_encoder_int8_convrot.safetensors"        "$COMFY/models/text_encoders"
 queue "https://huggingface.co/PrunaAI/P-H3-Image-Comfy/resolve/main/vae/p-h3-image_vae_bf16.safetensors"                                   "$COMFY/models/vae"
 
 # Pose / detection / segmentation / interpolation
