@@ -74,6 +74,7 @@ NODES=(
   https://github.com/1038lab/ComfyUI-QwenVL
   https://github.com/lbouaraba/comfyui-krea2edit
   https://github.com/EndcryptZ/ComfyUI-MiniMax-H3-Studio
+  https://github.com/alisson-anjos/ComfyUI-BFSNodes
 )
 
 # Optional: list custom nodes where requirements.txt should be skipped.
