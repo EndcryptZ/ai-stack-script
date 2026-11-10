@@ -302,7 +302,7 @@ queue "https://huggingface.co/Exnd/val/resolve/main/ass_v2_krea2_loraholic.safet
 queue "https://huggingface.co/conradlocke/krea2-identity-edit/resolve/main/krea2_general_edit_v2.safetensors" "$COMFY/models/loras"
 queue "https://huggingface.co/conradlocke/krea2-identity-edit/resolve/main/krea2_identity_edit_v2.safetensors" "$COMFY/models/loras"
 queue "https://huggingface.co/fal/MiniMax-H3-Realism-People-LoRA/resolve/main/h3-realism-people-t2v-i2v-r2v.safetensors" "$COMFY/models/loras"
-
+queue "https://huggingface.co/Alissonerdx/Minimax-H3-ComfyUI/resolve/main/loras/minimax_h3_motion_transfer_tara_v1.0_ref2va.safetensors" "$COMFY/models/loras"
 
 # ---------- 4. Wait for everything and report failures ----------
 fail=0
