@@ -9,45 +9,53 @@ PIP="${PIP:-pip}"                       # e.g. PIP="/app/venv/bin/pip" if ComfyU
 HF_TOKEN="${HF_TOKEN:-}"                # REQUIRED: needed for the private LoRAs (Exnd/val)
 MAX_JOBS="${MAX_JOBS:-6}"               # max simultaneous downloads
 BASE=https://huggingface.co/Comfy-Org/Krea-2/resolve/main
+STATS_DIR="$(mktemp -d)"                # each download writes the bytes it fetched here
+trap 'rm -rf "$STATS_DIR"' EXIT
 
-# ---------- Finish messages ----------
-MSGS_FAST=(
-  "Under 30 seconds?! Either everything was cached or you're living in the future."
-  "Speedrun complete. World record pace."
-  "That was so fast I think the models were already waiting for you."
-  "Barely had time to blink. Blink-and-you-missed-it energy."
-  "Flash mode: engaged. Nothing to do here, you're already set."
-  "Faster than a microwave burrito. Respect."
-  "Zero fluff, all speed. Your pod is a gremlin of efficiency."
-  "Done before your coffee even started brewing."
+# ---------- Finish messages (picked by average download speed) ----------
+# Nothing (or almost nothing) was downloaded
+MSGS_CACHED=(
+  "Barely anything to download. Either everything was cached or you're living in the future."
   "Cache hit! Your future self thanks your past self."
-  "Under 30 seconds. Somewhere, a sysadmin just smiled."
+  "Models were already waiting for you. Nothing to do here, you're set."
+  "Zero fluff, all cache. Your pod is a gremlin of efficiency."
+  "Done before your coffee even started brewing."
 )
 
-MSGS_MEDIUM=(
-  "Under a minute. Just enough time to stretch. Nice."
-  "Less than a minute, smooth like butter."
-  "Quick and clean. Chef's kiss."
-  "Almost a speedrun. Silver medal vibes."
-  "A short stretch, a sip of water, and boom, ready to go."
-  "Under a minute. Efficient and a little bit smug."
-  "Not bad at all. The internet was kind to you today."
-  "That was a lightning-ish round. Time to make some pixels."
-  "Good vibes only. Setup done in under a minute."
-  "Sleek. Swift. Slightly suspicious how easy that was."
-)
-
+# under 100 Mbps
 MSGS_SLOW=(
-  "Over a minute, but those models don't download themselves. Go make some art."
-  "Big files, big dreams. Worth the wait."
-  "Good things come to those who wait. Also to those with fast bandwidth."
-  "Gigabytes were moved. Your pod earned a snack."
+  "Slow internet today, but every byte made it. Go make some art."
+  "That connection took the scenic route. Worth the wait, though."
   "Patience paid off. Time to generate something beautiful."
-  "That was a proper download session. You can feel the bytes."
+  "Dial-up nostalgia unlocked, but the models arrived."
   "Slow and steady wins the render."
-  "Setup complete. Now go be an AI artist legend."
-  "A little wait, a lot of models. Fair trade."
-  "The pod has spoken: everything is installed. Go forth and create."
+)
+
+# 100 - 500 Mbps
+MSGS_OK=(
+  "Solid connection. Nothing fancy, nothing broken."
+  "Decent speeds, decent vibes. Time to make some pixels."
+  "Gigabytes were moved at a respectable pace. Your pod earned a snack."
+  "Good things come to those who wait, and you didn't wait long."
+  "Reliable, steady, slightly smug. Setup complete."
+)
+
+# 500 - 2000 Mbps
+MSGS_FAST=(
+  "That's a fast pipe. The internet was kind to you today."
+  "Big files, small wait. Chef's kiss."
+  "Speedy! Those models practically teleported in."
+  "Smooth like butter. Go forth and create."
+  "Fast enough to be slightly suspicious. Respect."
+)
+
+# over 2000 Mbps
+MSGS_INSANE=(
+  "Absolute rocket of a connection. Datacenter-grade speeds."
+  "Speedrun complete. World record pace."
+  "Gigabytes vanished into your disk like nothing. Wow."
+  "That wasn't a download, that was a teleport."
+  "Flash mode: engaged. Your pod is a beast."
 )
 
 # ---------- Custom nodes (all cloned from their main branch) ----------
@@ -120,20 +128,25 @@ if ! command -v aria2c >/dev/null 2>&1; then
 fi
 
 # Download helper: multi-connection aria2c, no pre-allocation, resumable.
+# Records how many bytes this call actually fetched (0 if the file was already there).
 # Usage: dl URL DIR [SAVE_AS_FILENAME]
 dl() {
-  local url="$1" dir="$2" file="${3:-$(basename "$1")}"
+  local url="$1" dir="$2" file="${3:-$(basename "$1")}" rc=0 before=0 after=0
   mkdir -p "$dir"
+  [ -f "$dir/$file" ] && before=$(stat -c %s "$dir/$file")
   if command -v aria2c >/dev/null 2>&1; then
     local args=(-x 8 -s 8 -k 32M --file-allocation=none -c
       --summary-interval=10 --console-log-level=warn)
     [ -n "$HF_TOKEN" ] && args+=(--header="Authorization: Bearer $HF_TOKEN")
-    aria2c "${args[@]}" -d "$dir" -o "$file" "$url"
+    aria2c "${args[@]}" -d "$dir" -o "$file" "$url" || rc=$?
   else
     local wargs=(-c)
     [ -n "$HF_TOKEN" ] && wargs+=(--header="Authorization: Bearer $HF_TOKEN")
-    wget "${wargs[@]}" -O "$dir/$file" "$url"
+    wget "${wargs[@]}" -O "$dir/$file" "$url" || rc=$?
   fi
+  [ -f "$dir/$file" ] && after=$(stat -c %s "$dir/$file")
+  echo $(( after - before )) > "$STATS_DIR/$BASHPID"
+  return $rc
 }
 
 # Queue a download in the background, waiting if MAX_JOBS are already running
@@ -173,9 +186,10 @@ done
 (
   for url in "${NODES[@]}"; do node_install "$url"; done
 ) &
-pids+=($!)
+PIP_PID=$!
 
 # ---------- 3. Model downloads ----------
+DL_START=$SECONDS
 
 # Krea-2
 queue "$BASE/diffusion_models/krea2_turbo_int8_convrot.safetensors" "$COMFY/models/diffusion_models"
@@ -225,6 +239,9 @@ queue "https://huggingface.co/Quiho/Krea2_TextFusion_Refusal-Reduction_LoRA_v1.0
 # ---------- 4. Wait for everything and report failures ----------
 fail=0
 for pid in "${pids[@]}"; do wait "$pid" || fail=1; done
+DL_ELAPSED=$(( SECONDS - DL_START ))
+[ "$DL_ELAPSED" -lt 1 ] && DL_ELAPSED=1
+wait "$PIP_PID" || fail=1
 if [ "$fail" -ne 0 ]; then
   echo "One or more downloads failed after $(fmt_time $SECONDS). Re-run the script to resume."
   exit 1
@@ -232,15 +249,26 @@ fi
 
 # ---------- 5. Finish line ----------
 elapsed=$SECONDS
+total_bytes=$(cat "$STATS_DIR"/* 2>/dev/null | awk '{s+=$1} END{printf "%.0f", s+0}')
+read -r size_gb speed_mbs speed_mbps < <(
+  awk -v b="$total_bytes" -v t="$DL_ELAPSED" \
+    'BEGIN{printf "%.2f %.1f %.0f", b/1e9, b/t/1e6, b*8/t/1e6}'
+)
+
+if   [ "$total_bytes" -lt 100000000 ]; then msg=$(pick MSGS_CACHED)   # < 100 MB fetched
+elif [ "$speed_mbps" -lt 100 ];        then msg=$(pick MSGS_SLOW)
+elif [ "$speed_mbps" -lt 500 ];        then msg=$(pick MSGS_OK)
+elif [ "$speed_mbps" -lt 2000 ];       then msg=$(pick MSGS_FAST)
+else                                        msg=$(pick MSGS_INSANE)
+fi
+
 echo ""
 echo "=============================================="
 echo "  Script finished in $(fmt_time $elapsed) (${elapsed}s total)"
-if [ "$elapsed" -lt 30 ]; then
-  echo "  $(pick MSGS_FAST)"
-elif [ "$elapsed" -lt 60 ]; then
-  echo "  $(pick MSGS_MEDIUM)"
-else
-  echo "  $(pick MSGS_SLOW)"
+echo "  Downloaded:    ${size_gb} GB in $(fmt_time $DL_ELAPSED)"
+if [ "$total_bytes" -ge 100000000 ]; then
+  echo "  Average speed: ${speed_mbs} MB/s (${speed_mbps} Mbps)"
 fi
+echo "  $msg"
 echo "=============================================="
 echo "Done. Restart ComfyUI to load the new nodes and models."
