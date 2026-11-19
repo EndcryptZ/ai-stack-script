@@ -249,11 +249,21 @@ fi
 
 # ---------- 5. Finish line ----------
 elapsed=$SECONDS
-total_bytes=$(cat "$STATS_DIR"/* 2>/dev/null | awk '{s+=$1} END{printf "%.0f", s+0}')
+set +e   # the finish block must never kill the script silently
+
+total_bytes=0
+for f in "$STATS_DIR"/*; do
+  if [ -f "$f" ]; then
+    v=$(cat "$f" 2>/dev/null)
+    total_bytes=$(( total_bytes + ${v:-0} ))
+  fi
+done
+
 read -r size_gb speed_mbs speed_mbps < <(
   awk -v b="$total_bytes" -v t="$DL_ELAPSED" \
     'BEGIN{printf "%.2f %.1f %.0f", b/1e9, b/t/1e6, b*8/t/1e6}'
 )
+size_gb="${size_gb:-0}"; speed_mbs="${speed_mbs:-0}"; speed_mbps="${speed_mbps:-0}"
 
 if   [ "$total_bytes" -lt 100000000 ]; then msg=$(pick MSGS_CACHED)   # < 100 MB fetched
 elif [ "$speed_mbps" -lt 100 ];        then msg=$(pick MSGS_SLOW)
